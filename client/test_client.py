@@ -1,6 +1,15 @@
 import socket
 import pickle
 
+
+HEADER = 1024
+PORT = 5050
+FORMAT = 'utf-8'
+DISCONNECT_MESSAGE = "!DISCONNECT"
+SERVER = '127.0.0.1'
+ADRR = (SERVER, PORT)
+
+
 class ShipBoard():
     def __init__(self):
         self.board = [[" ", " ", " "], [" ", " ", " "], [" ", " ", " "]]
@@ -40,14 +49,8 @@ class GameConnection():
             Use self.client to send messages
         """
         self.board = board
-        self.HEADER = 64
-        self.PORT = 5050
-        self.FORMAT = 'utf-8'
-        self.DISCONNECT_MESSAGE = "!DISCONNECT"
-        self.SERVER = '127.0.0.1'
-        self.ADDR = (self.SERVER, self.PORT)
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.client.connect((self.SERVER, self.PORT))
+        self.client.connect(ADRR)
 
     def send_board(self, board):
         """
@@ -55,15 +58,18 @@ class GameConnection():
         """
         package = pickle.dumps(board)
         self.client.send(package)
+        print(self.client.recv(HEADER).decode(FORMAT))
+        
 
     def receive_board(self):
         """
             Receives the board from the server (opponent)
         """
         print("Waiting for server to respond...")
-        enc = self.client.recv(1024)
-        self.board = enc.decode("utf-8")
+        enc = self.client.recv(HEADER)
+        self.board = enc.decode(FORMAT)
         return self.board
+
 
 # set up the game
 board = ShipBoard()
@@ -72,14 +78,8 @@ gc = GameConnection(player_board)
 board_to_server = gc.send_board(player_board)
 
 
-while True:
-    opponent_board = gc.receive_board()
-
-
-
-
-
-
+#while True:
+    #opponent_board = gc.receive_board()
 
 
 """
