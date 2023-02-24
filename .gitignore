@@ -1,2 +1,5 @@
 venv
 commands.txt
+Pipfile
+python
+.pytest_cache
