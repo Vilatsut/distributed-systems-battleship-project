@@ -72,5 +72,5 @@ def start_server():
                 print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 1}")
 
 
-print("Starting the serevr.")
+print("Starting the server.")
 start_server()
