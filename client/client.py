@@ -4,9 +4,14 @@ import sys
 
 HEADER = 1024
 FORMAT = 'utf-8'
-PORT = 5050
+#load balancer port
+PORT1 = 16432
+#game server ports
+PORT2 = 5050
+PORT3 = 5051
+PORT4 = 5052
 SERVER = '127.0.0.1'
-ADRR = (SERVER, PORT)
+#ADRR = (SERVER, PORT)
 DISCONNECT_MESSAGE = "!DISCONNECT"
 
 
@@ -90,9 +95,17 @@ class Client:
         print(self.sock.recv(HEADER).decode(FORMAT))
 
 if __name__ == "__main__":
-    cl = Client(SERVER, PORT)
+    data = b''
+    ask_for_servers = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    ask_for_servers.connect((SERVER, PORT1))
+    message = "send servers pls!"
+    ask_for_servers.send(message.encode())
+    while not data:
+        data = ask_for_servers.recv(HEADER)
+    print("received data: ", data.decode())
+    ask_for_servers.close()
+    cl = Client(SERVER, PORT2)
     cl.start()
-
 
 
 """

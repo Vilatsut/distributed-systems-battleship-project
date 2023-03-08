@@ -1,16 +1,19 @@
 import socket
 import threading
 import pickle
+import sys
 
 HEADER = 4096
-PORT = 5050
+#load balancer port
+PORT1 = 16432
+#game server ports
+PORT2 = 5050
+PORT3 = 5051
+PORT4 = 5052
 SERVER = '127.0.0.1'
-ADDR = (SERVER, PORT)
+#ADDR = (SERVER, PORT)
 FORMAT = 'utf-8'
 DISCONNECT_MESSAGE = "!DISCONNECT"
-
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind(ADDR)
 
 player_connections = []
 player_addresses = []
@@ -59,7 +62,9 @@ def start_game():
             player_input(2)
 
 
-def start_server():
+def start_server(port):
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind((SERVER, port))
     server.listen()
     print(f"Server is listening on {SERVER}")
     while True:
@@ -71,6 +76,41 @@ def start_server():
                 thread.start()
                 print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 1}")
 
+def send_to_load_balancer(port):
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.connect((SERVER, PORT1))
+    message = f"Game server started at {port}"
+    server.send(message.encode())
+    server.close()
 
+# this is for checking for available PORT to connect game server to
+check_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+free_port = ""
+try:
+    check_socket.bind((SERVER, PORT2))
+except OSError:
+    try:
+        check_socket.bind((SERVER, PORT3))
+    except OSError:
+        try:
+            check_socket.bind((SERVER, PORT4))
+        except OSError:
+            print("No available PORTs, maximum server number already exceeded. Press anything to exit.")
+            input()
+            sys.exit()
+        else:
+            print(f"Connected to {PORT4}")
+            free_port = PORT4
+    else:
+        print(f"Connected to {PORT3}")
+        free_port = PORT3
+else:
+    print(f"Connected to {PORT2}")
+    free_port = PORT2
+
+check_socket.close()
+
+print("Sending information to load balancer.")
+send_to_load_balancer(free_port)
 print("Starting the server.")
-start_server()
+start_server(free_port)
