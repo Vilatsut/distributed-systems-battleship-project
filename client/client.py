@@ -11,6 +11,8 @@ PORT2 = 5050
 PORT3 = 5051
 PORT4 = 5052
 SERVER = '127.0.0.1'
+
+
 #ADRR = (SERVER, PORT)
 DISCONNECT_MESSAGE = "!DISCONNECT"
 
@@ -62,17 +64,24 @@ class ShipBoard():
 
 class Client:
 
-    def __init__(self, host, port) -> None:
+    def __init__(self, host, port, c_host=False, c_port=False) -> None:
         self.server_host = host
         self.server_port = port
+        self.chat_host = c_host
+        self.chat_port = c_port
         self.sock = None
 
     def start(self):
         print("Starting game...")
-
         try:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.connect((self.server_host, self.server_port))
+            if self.chat_port:
+                try:
+                    self.chatsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    self.chatsock.connect((self.server_host, self.server_port))
+                except Exception as e:
+                    print("Unable to connect to chat socket with exception: ", e)
         except Exception as e:
             print("Unable to connect to socket with exception: ", e)
             if self.sock:
@@ -84,6 +93,13 @@ class Client:
         board = ShipBoard()
         board.input_board()
         self.send_board(board.board)
+        while True:
+            # wait for gameserver to give turn to play
+            player_input = input("To send a chat start message with C")
+            if player_input.upper().startswith("C"):
+                # somehow need to implement user names for chat but lets think about that later lmao
+                self.chatsock.send(player_input.encode())
+
 
 
     def send_board(self, board):
@@ -103,8 +119,13 @@ if __name__ == "__main__":
     while not data:
         data = ask_for_servers.recv(HEADER)
     print("received data: ", data.decode())
+    if "Chat server is online." in data.decode():
+        #chat server ip and port
+        CHAT_SERVER = '127.0.0.1'
+        CHAT_PORT = 6969
+
     ask_for_servers.close()
-    cl = Client(SERVER, PORT2)
+    cl = Client(SERVER, PORT2, CHAT_SERVER, CHAT_PORT)
     cl.start()
 
 
