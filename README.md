@@ -10,5 +10,6 @@ To start the program manually:
 6. python ./gameserver/game_server.py
 7. python ./gameserver/game_server.py
 8. python ./gameserver/game_server.py
-9. python ./client/client.py
+9. python ./chatserver/chatserver.py
+10. python ./client/client.py
 
