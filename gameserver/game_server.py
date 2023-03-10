@@ -4,14 +4,14 @@ import pickle
 import sys
 
 HEADER = 4096
-#load balancer port
+# load balancer port
 PORT1 = 16432
-#game server ports
+# game server ports
 PORT2 = 5050
 PORT3 = 5051
 PORT4 = 5052
 SERVER = '127.0.0.1'
-#ADDR = (SERVER, PORT)
+# ADDR = (SERVER, PORT)
 FORMAT = 'utf-8'
 DISCONNECT_MESSAGE = "!DISCONNECT"
 
@@ -47,7 +47,7 @@ def handle_client(conn, addr, num):
 def player_input(player):
     # to be implemented
     # this is supposed to take player inputs i.e. which tile they want to attack
-    return
+    return "Move accepted"
 
 
 def start_game():
@@ -57,9 +57,11 @@ def start_game():
         # decide whose turn it is
         if (turn % 2 == 0):
             print("player 1 turn")
-            player_input(1)
+            p1 = player_input(1)
         else:
-            player_input(2)
+            p2 = player_input(2)
+        if p1 or p2 == "Move accepted":
+            turn = turn + 1
 
 
 def start_server(port):
@@ -76,12 +78,14 @@ def start_server(port):
                 thread.start()
                 print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 1}")
 
+
 def send_to_load_balancer(port):
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.connect((SERVER, PORT1))
     message = f"Game server started at {port}"
     server.send(message.encode())
     server.close()
+
 
 # this is for checking for available PORT to connect game server to
 check_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -95,7 +99,8 @@ except OSError:
         try:
             check_socket.bind((SERVER, PORT4))
         except OSError:
-            print("No available PORTs, maximum server number already exceeded. Press anything to exit.")
+            print(
+                "No available PORTs, maximum server number already exceeded. Press anything to exit.")
             input()
             sys.exit()
         else:
@@ -114,3 +119,9 @@ print("Sending information to load balancer.")
 send_to_load_balancer(free_port)
 print("Starting the server.")
 start_server(free_port)
+
+
+
+
+def asd():
+    return 0
