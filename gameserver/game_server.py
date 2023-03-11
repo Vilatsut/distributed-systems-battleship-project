@@ -47,6 +47,17 @@ def handle_client(conn, addr, num):
 def player_input(player):
     # to be implemented
     # this is supposed to take player inputs i.e. which tile they want to attack
+    
+    msg = f'SHOOT player {player}'
+    msg.encode()
+    player_connections[player-1].send(msg)
+
+    msg = f'WAIT player {player%}'
+    msg.encode()
+    player_connections[player-1].send(msg)
+
+    response = player_connections[player-1].recv(HEADER)
+    shot = pickle.loads(response)
     return "Move accepted"
 
 
@@ -59,6 +70,7 @@ def start_game():
             print("player 1 turn")
             p1 = player_input(1)
         else:
+            print("player 2 turn")
             p2 = player_input(2)
         if p1 or p2 == "Move accepted":
             turn = turn + 1
