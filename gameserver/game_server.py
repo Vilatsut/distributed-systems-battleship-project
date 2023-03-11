@@ -37,43 +37,104 @@ def handle_client(conn, addr, num):
     player_boards.append(board)
 
     print(f"User board was {board}")
-    conn.send(f"Welcome you are player {num}.".encode(FORMAT))
+    conn.send(f"WAIT Welcome you are player {num}.".encode(FORMAT))
 
     if (num == 2):
         start_game()
-    conn.close()
+    # conn.close()
 
 
-def player_input(player):
-    # to be implemented
-    # this is supposed to take player inputs i.e. which tile they want to attack
+def player_shoot(player):
     
-    msg = f'SHOOT player {player}'
-    msg.encode()
-    player_connections[player-1].send(msg)
-
-    msg = f'WAIT player {player%}'
-    msg.encode()
+    msg = f'SHOOT player {player}'.encode(FORMAT)
     player_connections[player-1].send(msg)
 
     response = player_connections[player-1].recv(HEADER)
     shot = pickle.loads(response)
-    return "Move accepted"
+    #TODO Make sure shot is valid tuple (int, int) inside boundaries 0-BOARD_SIZE and not hit yet
+    return shot
 
+def player_shoot_again(player):
+    
+    msg = f'HIT player {player}'.encode(FORMAT)
+    player_connections[player-1].send(msg)
+
+    response = player_connections[player-1].recv(HEADER)
+    shot = pickle.loads(response)
+    #TODO Make sure shot is valid tuple (int, int) inside boundaries 0-BOARD_SIZE and not hit yet
+    return shot
+
+def act_shot(player, shot):
+    hit = False
+    opposite_board = player_boards[player%2]
+    if opposite_board[shot[0]][shot[1]] == "X":
+        print("Player hit something")
+        hit = True
+    player_boards[player%2][shot[0]][shot[1]] = "O"
+    return hit
+
+def is_finished(player):
+    opposite_board = player_boards[player%2]
+    return not any('X' in sublist for sublist in opposite_board)
+
+def player_win(player):
+
+    msg = f'WIN player {player}?'.encode(FORMAT)
+    player_connections[player-1].send(msg)
+
+    msg = f'LOSE player {player%2+1}?'.encode(FORMAT)
+    player_connections[player%2].send(msg)
+
+
+def player_miss(player):
+    msg = f'MISS player {player - 1}?'.encode(FORMAT)
+    player_connections[player - 1].send(msg)
+
+def print_boards():
+
+    msg = f'PRINT {player_boards}?'.encode(FORMAT)
+    for conn in player_connections:
+        conn.send(msg)
+    
+        
 
 def start_game():
     winner = 0
     turn = 0
     while winner == 0:
-        # decide whose turn it is
-        if (turn % 2 == 0):
-            print("player 1 turn")
-            p1 = player_input(1)
+        shot = None
+        player = turn%2+1
+        shot = player_shoot(player)
+        hit = act_shot(player, shot)
+        print_boards()
+        if is_finished(player):
+            print(f"Player {player} won!!!")
+            player_win(player)
+            winner = player
+            for conn in player_connections:
+                conn.close()
+            return
+        
+        if hit:
+            while hit:
+                shot = player_shoot_again(player)
+                hit = act_shot(player, shot)
+                print_boards()
+                if is_finished(player):
+                    print(f"Player {player} won!!!")
+                    player_win(player)
+                    winner = player
+                    for conn in player_connections:
+                        conn.close()
+                    return
+                
+                print(f"Player hit something! Gets to shoot again. hit was {hit}")
         else:
-            print("player 2 turn")
-            p2 = player_input(2)
-        if p1 or p2 == "Move accepted":
-            turn = turn + 1
+            print("Player missed")
+            player_miss(player)
+        
+
+        turn = turn + 1
 
 
 def start_server(port):

@@ -1,3 +1,4 @@
+from time import sleep
 import socket
 import pickle
 import sys
@@ -22,8 +23,8 @@ SHIP_TYPES = {
     # 'Carrier': 5,
     # 'Battleship': 4,
     # 'Cruiser': 3,
-    'Submarine': 3,
-    'Destroyer': 2
+    # 'Submarine': 3,
+    'Destroyer': 1
 }
 BOARD_SIZE = 3
 
@@ -67,7 +68,7 @@ class ShipBoard():
             # prompt the player to enter the row and column of their shot
             try:
                 row = int(input(f"Enter the row of your shot (0-{BOARD_SIZE-1}): "))
-                col = int(input(f"Enter the column of your shot (0-{BOARD_SIZE-1}): "))
+                col = int(input(f"Enter the col of your shot (0-{BOARD_SIZE-1}): "))
             except ValueError:
                 print("Invalid input. Please enter a number between 1 and 10.")
                 continue
@@ -96,7 +97,6 @@ class Client:
         for port in self.server_ports:
             try:
                 self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                self.sock.settimeout(5)
                 self.sock.connect((self.server_host, int(port)))
                 if self.chat_port:
                     print("chat server is online")
@@ -119,51 +119,58 @@ class Client:
         board.input_board()
         self.send_board(board.board)
         while True:
-            # wait for gameserver to give turn to play (not implemented)
-            # player can send message to chat server meanwhile!
-            # tähän väliin pitäs saada varmaa joku ehtolause ettei voi lähettää viestiä jos on sun pelivuoro?
 
             # Response is SHOOT when its players turn to shoot, HIT when last shot hit something and its time to shoot again, MISS when last hit missed, WIN when player won
             try:
-                response = self.sock.recv(HEADER).decode() 
-                print("REESPONSE WAS" + response)
+                # print("Waiting for server response...")
+                response = self.sock.recv(HEADER).decode()
+                # print("RESPONSE WAS " + response)
             except TimeoutError as e:
                 print("Server connection timed out receiving")
 
-            if response.startswith("SHOOT"):
-                print("Your turn to shoot!")
-                shot = board.input_shot()
-                package = pickle.dumps(shot)
-                try:
-                    self.sock.send(package)
-                except:
-                    print("Sending the shot failed")
+            for response in response.split("?"):
+                if response.startswith("SHOOT"):
+                    print("Your turn to shoot!")
+                    shot = board.input_shot()
+                    package = pickle.dumps(shot)
+                    try:
+                        self.sock.send(package)
+                    except:
+                        print("Sending the shot failed")
 
-            elif response.startswith("WAIT"):
-                print("Wait for your turn!")
-            elif response.startswith("HIT"):
-                print("You hit an enemy ship!\nShoot again!!")
-                shot = board.input_shot()
-                package = pickle.dumps(shot)
-                try:
-                    self.sock.send(package)
-                except:
-                    print("Sending the shot failed")
-    
-            elif response.startswith("MISS"):
-                print("You missed. Wait for your turn.")
-            elif response.startswith("WIN"):
-                print("You sunk all enemy ships and won the game!!!")
+                elif response.startswith("WAIT"):
+                    print("Wait for your turn!")
+                elif response.startswith("HIT"):
+                    print("You hit an enemy ship! Shoot again!!")
+                    shot = board.input_shot()
+                    package = pickle.dumps(shot)
+                    try:
+                        self.sock.send(package)
+                    except:
+                        print("Sending the shot failed")
+        
+                elif response.startswith("MISS"):
+                    print("You missed. Wait for your turn.")
+                elif response.startswith("WIN"):
+                    print("You sunk all enemy ships and won the game!!!")
+                    return
+                elif response.startswith("LOSE"):
+                    print("The other player sunk all your ships!!!")
+                    return
+                
+                elif response.startswith("PRINT"):
+                    print(f"Both Boards look almost like  \n{response}\n")
+
 
             
-            player_input = input("To send a chat start message with >: ")
+            # player_input = input("To send a chat start message with C, to check for turn press anything else.")
             # this could perhaps use a better implementation...
-            if player_input.upper().startswith("C"):
+            # if player_input.upper().startswith("C"):
                 # somehow need to implement user names for chat but lets think about that later lmao
-                print("message sent to chat server.")
-                self.chatsock.send(player_input.encode())
+                # print("message sent to chat server.")
+                # self.chatsock.send(player_input.encode())
             # prints other players messages
-            print(self.chatsock.recv(HEADER).decode(FORMAT))
+            # print(self.chatsock.recv(HEADER).decode(FORMAT))
 
 
 
@@ -173,7 +180,7 @@ class Client:
         """
         package = pickle.dumps(board)
         self.sock.send(package)
-        print(self.sock.recv(HEADER).decode(FORMAT))
+        # print(self.sock.recv(HEADER).decode(FORMAT))
 
 if __name__ == "__main__":
     data = b''
@@ -192,6 +199,7 @@ if __name__ == "__main__":
         data = ask_for_servers.recv(HEADER)
     while not ports:
         print("Waiting for ports...")
+        sleep(0.1)
         ports = ask_for_servers.recv(HEADER)
         print(ports)
     # while not chat_online:
