@@ -3,9 +3,8 @@ Course project for distributed systems course
 
 
 Requirements:
-Redis:
-  https://redis.io/docs/getting-started/installation/install-redis-on-windows/
-Python
+1. Redis: https://redis.io/docs/getting-started/installation/install-redis-on-windows/
+2. Python
  
 To start the program manually:
 1. open CMD
