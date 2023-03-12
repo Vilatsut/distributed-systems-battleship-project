@@ -68,7 +68,7 @@ def act_shot(player, shot):
     hit = False
     opposite_board = player_boards[player%2]
     if opposite_board[shot[0]][shot[1]] == "X":
-        print("Player hit something")
+        print(f"Player {player} hit something with shot {shot}")
         hit = True
     player_boards[player%2][shot[0]][shot[1]] = "O"
     return hit
@@ -91,7 +91,7 @@ def player_miss(player):
     player_connections[player - 1].send(msg)
 
 def print_boards():
-
+    #TODO Send the opposite board hidden from the player
     msg = f'PRINT {player_boards}?'.encode(FORMAT)
     for conn in player_connections:
         conn.send(msg)
