@@ -39,13 +39,13 @@ while True:
             if "Game server" in data.decode():
                 print(f'Received from {client_address}: {data.decode()}')
                 if data.decode()[-4:] not in game_server_addresses:
-                    print(data.decode()[-4:])
+                    # print(data.decode()[-4:])
                     game_server_addresses.append(data.decode()[-4:])
             if "Chat server" in data.decode():
                 print(f"Received from {client_address}: {data.decode()}")
                 chat_online = True
             if "send servers pls!" in data.decode():
-                # print("Client connected!")
+                print("Client connected!")
                 # send the number of game servers online
                 response = f"There are currently {len(game_server_addresses)} game servers active in addresses: \n "
                 client_socket.send(response.encode())
