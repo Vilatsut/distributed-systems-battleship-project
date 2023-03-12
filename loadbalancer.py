@@ -3,6 +3,9 @@ import redis
 import subprocess
 import time
 import os
+import sys
+from psutil import process_iter
+from signal import SIGTERM # or SIGKILL
 
 HEADER = 4096
 PORT = 16432
@@ -13,6 +16,11 @@ DISCONNECT_MESSAGE = "!DISCONNECT"
 
 SERVER_PORTS = [5050, 5051, 5052]
 
+
+for proc in process_iter():
+    for conns in proc.connections(kind='inet'):
+        if conns.laddr.port == 16432:
+            proc.send_signal(SIGTERM) # or SIGKILL
 
 load_balancer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 load_balancer.bind(ADDR)
@@ -26,26 +34,24 @@ game_server_addresses = []
 chat_online = False
 
 # if no game servers, start 3 game servers
-subprocess.call('start /wait python game_server.py', shell=True)
-input()
-print("ASD")
-
 if not game_server_addresses:
     print("starting 3 game server instances")
     for port in SERVER_PORTS:
         try:
-            subprocess.call('start /wait python ./gameserver/game_server.py', shell=True)
+            subprocess.Popen('start /wait python game_server.py', shell=True)
+            time.sleep(2)
         except Exception as e:
             print("Error: ", e)
         else:
             print("started on: ", port)
-            game_server_addresses.append(str(port))
-    time.sleep(10)
-
-input()
+    
+print("game servers started", game_server_addresses)
 while True:
-    client_socket, client_address = load_balancer.accept()
-    data = client_socket.recv(1024)
+    try:
+        client_socket, client_address = load_balancer.accept()
+        data = client_socket.recv(1024)
+    except:
+        sys.exit()
     try:
         if "reconnect" in data.decode():
             # if the last 4 string letters are the gamecode
@@ -89,7 +95,7 @@ while True:
                     print("starting 3 game server instances")
                     for port in SERVER_PORTS:
                         try:
-                            subprocess.call('start /wait python gameserver.py', shell=True)
+                            subprocess.Popen('start /wait python gameserver.py', shell=True)
                         except Exception as e:
                             print("Error: ", e)
                         else:
@@ -118,3 +124,5 @@ while True:
 
 
     client_socket.close()
+
+

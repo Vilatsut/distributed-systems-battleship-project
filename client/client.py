@@ -94,6 +94,7 @@ class Client:
 
     def start(self):
         print("Starting game...")
+        
         for port in self.server_ports:
             try:
                 self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -215,7 +216,7 @@ if __name__ == "__main__":
     ask_for_servers.close()
     # vittu mikä pirkka ratkasu ::DD
     # Comment: Vittu apua :DD
-    ports = str(ports).strip("b,'][").split(', ')
+    ports = str(ports).strip("b,'][").split(',')
     print(ports)
     if CHAT_SERVER:
         #this needs to be changed so that it uses the received
