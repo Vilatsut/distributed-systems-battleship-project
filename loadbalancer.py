@@ -5,7 +5,7 @@ import time
 import os
 import sys
 from psutil import process_iter
-from signal import SIGTERM # or SIGKILL
+from signal import SIGTERM  # or SIGKILL
 
 HEADER = 4096
 PORT = 16432
@@ -14,13 +14,20 @@ ADDR = (SERVER, PORT)
 FORMAT = 'utf-8'
 DISCONNECT_MESSAGE = "!DISCONNECT"
 
-SERVER_PORTS = [5050, 5051, 5052]
+SERVER_PORTS = [5050, 5051]
 
 
 for proc in process_iter():
     for conns in proc.connections(kind='inet'):
         if conns.laddr.port == 16432:
-            proc.send_signal(SIGTERM) # or SIGKILL
+            proc.send_signal(SIGTERM)
+        if conns.laddr.port == 5050:
+            proc.send_signal(SIGTERM)
+        if conns.laddr.port == 5051:
+            proc.send_signal(SIGTERM)
+        if conns.laddr.port == 5052:
+            proc.send_signal(SIGTERM)
+
 
 load_balancer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 load_balancer.bind(ADDR)
@@ -44,12 +51,14 @@ if not game_server_addresses:
             print("Error: ", e)
         else:
             print("started on: ", port)
-    
-print("game servers started", game_server_addresses)
+
+
+
 while True:
     try:
         client_socket, client_address = load_balancer.accept()
         data = client_socket.recv(1024)
+
     except:
         sys.exit()
     try:
@@ -78,13 +87,14 @@ while True:
                 print("Client connected!")
 
                 # check which ports are actually game servers
-                check_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                check_socket = socket.socket(
+                    socket.AF_INET, socket.SOCK_STREAM)
                 for game_server in game_server_addresses:
                     try:
                         print("Checking ports...", game_server)
                         check_socket.bind((SERVER, int(game_server)))
                     except Exception as e:
-                        print("Error: ", e)
+                        print(f"Game server {game_server} active.")
 
                     else:
                         print("error")
@@ -95,7 +105,8 @@ while True:
                     print("starting 3 game server instances")
                     for port in SERVER_PORTS:
                         try:
-                            subprocess.Popen('start /wait python gameserver.py', shell=True)
+                            subprocess.Popen(
+                                'start /wait python gameserver.py', shell=True)
                         except Exception as e:
                             print("Error: ", e)
                         else:
@@ -118,11 +129,7 @@ while True:
                     response = "Chat Server is online."
                     client_socket.send(response.encode())
 
-    except Exception as e:
-        print("Exception: ", e)
-
-
+    except:
+        print("Exceptionpy")
 
     client_socket.close()
-
-
