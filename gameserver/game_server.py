@@ -83,7 +83,8 @@ def player_miss(player):
 def print_boards(gameid=None):
     if gameid:
         redis.mset({gameid: "$" + str(player_boards)})
-        print(redis.mget(gameid))
+        print("this is what boards look like: ", player_boards)
+        print("this is what is being sent: ", str(player_boards))
     msg = f'PRINT {player_boards}?'.encode(FORMAT)
     for conn in player_connections:
         print("sending print_boards:", msg)
@@ -190,12 +191,14 @@ def handle_client(conn, addr, num, port, restart=None):
             # if gameid then store the boards in redis memory under gameid key
             if gameid:
                 redis.mset({gameid: "$" + str(player_boards) + str(port)})
-                print(redis.mget(gameid))
+                print("these are the boards in redis:", redis.mget(gameid))
                 start_game(gameid)
             # else startgame without gameid
             else:
                 start_game()
     else:
+        boards = redis.mget(RESTART_GAMEID)
+        print(boards)
         conn.send(
             f"WAIT Welcome you are player {num} your game id is {RESTART_GAMEID}".encode(FORMAT))
         print("6969restarting game from ", RESTART_GAMEID)

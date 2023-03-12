@@ -33,7 +33,7 @@ BOARD_SIZE = 3
 
 class ShipBoard():
     def __init__(self):
-        self.board = [[" ", " ", " "], [" ", " ", " "], [" ", " ", " "]]
+            self.board = [[" ", " ", " "], [" ", " ", " "], [" ", " ", " "]]
 
     def display_board(self):
         print('  | ' + ' | '.join(str(i) for i in range(BOARD_SIZE)))
@@ -131,6 +131,16 @@ class Client:
             board = ShipBoard()
             board.input_board()
             self.send_board(board.board)
+        else:
+            msg = "send old board"
+            self.sock.send(msg.encode())
+            try:
+                print("Waiting for server to send old board...")
+                response = self.sock.recv(HEADER).decode()
+                # print("RESPONSE WAS " + response)
+            except TimeoutError as e:
+                print("Server connection timed out receiving")
+            # tähän jotenkin se boardin asettamine rediksestä
         while True:
             print("got here!")
             # Response is SHOOT when its players turn to shoot, HIT when last shot hit something and its time to shoot again, MISS when last hit missed, WIN when player won
