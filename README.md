@@ -1,6 +1,12 @@
 # distributed-systems-battleship-project
 Course project for distributed systems course
 
+
+Requirements:
+  Redis:
+    https://redis.io/docs/getting-started/installation/install-redis-on-windows/
+  Python
+ 
 To start the program manually:
 1. open CMD
 2. clone the repository
