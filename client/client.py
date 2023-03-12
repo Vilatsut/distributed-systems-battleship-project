@@ -111,7 +111,7 @@ class Client:
                     if self.sock:
                         self.sock.close()
                     sys.exit(1)
-                self.play()
+            self.play()
 
     def play(self):
         board = ShipBoard()

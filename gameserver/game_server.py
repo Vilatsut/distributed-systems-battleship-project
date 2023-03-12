@@ -40,6 +40,8 @@ def handle_client(conn, addr, num):
     conn.send(f"WAIT Welcome you are player {num}.".encode(FORMAT))
 
     if (num == 2):
+        print(player_addresses)
+        print(player_connections)
         start_game()
     # conn.close()
 
