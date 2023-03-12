@@ -41,7 +41,7 @@ class ShipBoard():
 
     def input_board(self):
         self.display_board()
-    
+
         for ship, ship_positions in SHIP_TYPES.items():
             while True:
                 while ship_positions > 0:
@@ -95,24 +95,23 @@ class Client:
     def start(self):
         print("Starting game...")
         for port in self.server_ports:
-            try:
-                self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                self.sock.connect((self.server_host, int(port)))
-                if self.chat_port:
-                    print("chat server is online")
-                    try:
-                        self.chatsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                        self.chatsock.connect((self.chat_host, self.chat_port))
-                        print(self.chat_host, self.chat_port)
-                        print("connected to chat server succesfully")
-                    except Exception as e:
-                        print("Unable to connect to chat socket with exception: ", e)
-            except Exception as e:
-                print("Unable to connect to socket with exception: ", e)
-                if self.sock:
-                    self.sock.close()
-                sys.exit(1)
-            self.play()
+            print("Whole ports: "+ port)
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.sock.connect((self.server_host, int(port)))
+            if self.chat_port:
+                print("chat server is online: ")
+                print(self.chat_port)
+                try:
+                    self.chatsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    self.chatsock.connect((self.chat_host, self.chat_port))
+                    print(self.chat_host, self.chat_port)
+                    print("connected to chat server succesfully")
+                except Exception as e:
+                    print("Unable to connect to socket with exception: ", e)
+                    if self.sock:
+                        self.sock.close()
+                    sys.exit(1)
+                self.play()
 
     def play(self):
         board = ShipBoard()
@@ -140,6 +139,12 @@ class Client:
 
                 elif response.startswith("WAIT"):
                     print("Wait for your turn!")
+                    player_input = input("To send a chat start message with >, to check for turn press anything else.")
+                    if player_input.upper().startswith(">"):
+                        print("message sent to chat server.")
+                        self.chatsock.send(player_input.encode())
+                    print(self.chatsock.recv(HEADER).decode(FORMAT))
+
                 elif response.startswith("HIT"):
                     print("You hit an enemy ship! Shoot again!!")
                     shot = board.input_shot()
@@ -148,7 +153,7 @@ class Client:
                         self.sock.send(package)
                     except:
                         print("Sending the shot failed")
-        
+
                 elif response.startswith("MISS"):
                     print("You missed. Wait for your turn.")
                 elif response.startswith("WIN"):
@@ -157,20 +162,10 @@ class Client:
                 elif response.startswith("LOSE"):
                     print("The other player sunk all your ships!!!")
                     return
-                
+
                 elif response.startswith("PRINT"):
                     print(f"Both Boards look almost like  \n{response}\n")
 
-
-            
-            # player_input = input("To send a chat start message with C, to check for turn press anything else.")
-            # this could perhaps use a better implementation...
-            # if player_input.upper().startswith("C"):
-                # somehow need to implement user names for chat but lets think about that later lmao
-                # print("message sent to chat server.")
-                # self.chatsock.send(player_input.encode())
-            # prints other players messages
-            # print(self.chatsock.recv(HEADER).decode(FORMAT))
 
 
 
@@ -185,7 +180,7 @@ class Client:
 if __name__ == "__main__":
     data = b''
     ports = b''
-    chat_online = b''
+    chat_online = False
 
     # asks for the ports of online game servers (5050, 5051, 5052)
     ask_for_servers = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -201,11 +196,17 @@ if __name__ == "__main__":
         print("Waiting for ports...")
         sleep(0.1)
         ports = ask_for_servers.recv(HEADER)
+        ports_de = ports.decode()
         print(ports)
-    # while not chat_online:
-    #     chat_online = ask_for_servers.recv(HEADER)
+    if ('6969') in ports_de:
+        ports_de = ports_de.split('||')[0]
+        print(ports_de)
+        CHAT_PORT=int(6969)
+        CHAT_SERVER=str("127.0.0.1")
+        chat_online = True
+        #chat_online=f"{CHAT_SERVER, CHAT_PORT}"
     print("received data: ", data.decode())
-    print("received ports: ", ports.decode())
+    print("received ports: ", ports_de)
     if chat_online:
         print("chat server set")
         #chat server ip and port
@@ -215,13 +216,13 @@ if __name__ == "__main__":
     ask_for_servers.close()
     # vittu mikä pirkka ratkasu ::DD
     # Comment: Vittu apua :DD
-    ports = str(ports).strip("b,'][").split(', ')
-    print(ports)
+    ports_de = str(ports_de).strip("b,'][").split(',')
+    print("CLIENT.PY PORTS: " + str(ports_de))
     if CHAT_SERVER:
         #this needs to be changed so that it uses the received
-        cl = Client(SERVER, ports, CHAT_SERVER, CHAT_PORT)
+        cl = Client(SERVER, ports_de, CHAT_SERVER, CHAT_PORT)
     else:
-        cl = Client(SERVER, ports)
+        cl = Client(SERVER, ports_de)
     cl.start()
 
 

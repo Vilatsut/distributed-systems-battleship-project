@@ -18,7 +18,8 @@ print("Load balancer active.")
 print(f"Load balancer is listening on {SERVER}")
 
 game_server_addresses = []
-
+CHAT_PORT = None
+CHAT_SERVER = None
 chat_online = False
 
 while True:
@@ -42,8 +43,10 @@ while True:
                     # print(data.decode()[-4:])
                     game_server_addresses.append(data.decode()[-4:])
             if "Chat server" in data.decode():
-                print(f"Received from {client_address}: {data.decode()}")
+                print(f"Received Chat server from {client_address}: {data.decode()}")
                 chat_online = True
+                CHAT_SERVER = (client_address[0])
+                CHAT_PORT = (data.decode()[-4:])
             if "send servers pls!" in data.decode():
                 print("Client connected!")
                 # send the number of game servers online
@@ -54,11 +57,12 @@ while True:
                 for i in game_server_addresses:
                     ports = ports + "," + i
                 response = f"{ports}"
-                print(response)
+                print("Port response: " + response)
                 client_socket.send(response.encode())
                 if chat_online:
                     response = ""
-                    response = "Chat Server is online."
+                    response = f"||{CHAT_PORT}"
+                    print("Chat response: " + str(response))
                     client_socket.send(response.encode())
     except Exception as e:
         print("Exception: ", e)

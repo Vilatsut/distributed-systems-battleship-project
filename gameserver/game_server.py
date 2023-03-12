@@ -45,7 +45,7 @@ def handle_client(conn, addr, num):
 
 
 def player_shoot(player):
-    
+
     msg = f'SHOOT player {player}'.encode(FORMAT)
     player_connections[player-1].send(msg)
 
@@ -55,7 +55,7 @@ def player_shoot(player):
     return shot
 
 def player_shoot_again(player):
-    
+
     msg = f'HIT player {player}'.encode(FORMAT)
     player_connections[player-1].send(msg)
 
@@ -95,8 +95,8 @@ def print_boards():
     msg = f'PRINT {player_boards}?'.encode(FORMAT)
     for conn in player_connections:
         conn.send(msg)
-    
-        
+
+
 
 def start_game():
     winner = 0
@@ -114,7 +114,7 @@ def start_game():
             for conn in player_connections:
                 conn.close()
             return
-        
+
         if hit:
             while hit:
                 shot = player_shoot_again(player)
@@ -127,12 +127,12 @@ def start_game():
                     for conn in player_connections:
                         conn.close()
                     return
-                
+
                 print(f"Player hit something! Gets to shoot again. hit was {hit}")
         else:
             print("Player missed")
             player_miss(player)
-        
+
 
         turn = turn + 1
 
