@@ -6,8 +6,8 @@ Requirements:
 1. Redis: https://redis.io/docs/getting-started/installation/install-redis-on-windows/
 2. Python
  
-To start the program manually:
-1. open CMD
+To start the program manually (WINDOWS):
+1. open CMD (as administrator)
 2. clone the repository
 3. cd distributed-systems-battleship-project
 4. pip install -r requirements.txt
