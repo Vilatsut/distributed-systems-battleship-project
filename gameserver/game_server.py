@@ -2,6 +2,7 @@ import socket
 import threading
 import pickle
 import sys
+import redis
 
 HEADER = 4096
 # load balancer port
@@ -19,6 +20,24 @@ player_connections = []
 player_addresses = []
 player_boards = []
 
+redis = redis.Redis()
+
+def generate_gameId():
+    """
+        Generates gameid and makes sure there isn't one in the database currently
+    """
+    try:
+        gameids = redis.keys('*')
+        gameid = 0
+        # this could be implemented better later for more unique game ids
+        for i in range(100):
+            if i not in gameids:
+                gameid = i
+        return gameid
+    # if redis not active
+    except:
+        print("You havent started Redis!")
+        return None
 
 def handle_client(conn, addr, num):
     """
@@ -31,6 +50,9 @@ def handle_client(conn, addr, num):
     player_connections.append(conn)
     player_addresses.append(addr)
 
+    # generate gameid to the game
+    gameid = generate_gameId()
+
     # receive the player boards
     msg = conn.recv(HEADER)
     board = pickle.loads(msg)
@@ -40,6 +62,8 @@ def handle_client(conn, addr, num):
     conn.send(f"WAIT Welcome you are player {num}.".encode(FORMAT))
 
     if (num == 2):
+        if gameid:
+            redis.mset({gameid: player_boards})
         start_game()
     # conn.close()
 

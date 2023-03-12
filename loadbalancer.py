@@ -45,7 +45,7 @@ if not game_server_addresses:
     print("starting 3 game server instances")
     for port in SERVER_PORTS:
         try:
-            subprocess.Popen('start /wait python game_server.py', shell=True)
+            subprocess.Popen('start /wait python ./gameserver/game_server.py', shell=True)
             time.sleep(2)
         except Exception as e:
             print("Error: ", e)
@@ -125,7 +125,7 @@ while True:
                 print(response)
                 client_socket.send(response.encode())
                 if chat_online:
-                    response = ""
+                    
                     response = "Chat Server is online."
                     client_socket.send(response.encode())
 

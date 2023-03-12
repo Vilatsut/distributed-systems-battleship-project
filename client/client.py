@@ -13,6 +13,7 @@ PORT3 = 5051
 PORT4 = 5052
 SERVER = '127.0.0.1'
 CHAT_SERVER = None
+CHAT_PORT = None
 
 
 #ADRR = (SERVER, PORT)
@@ -113,7 +114,7 @@ class Client:
                 if self.sock:
                     self.sock.close()
                 sys.exit(1)
-            self.play()
+        self.play()
 
     def play(self):
         board = ShipBoard()
@@ -183,7 +184,9 @@ class Client:
         self.sock.send(package)
         # print(self.sock.recv(HEADER).decode(FORMAT))
 
-if __name__ == "__main__":
+
+
+def setup_client(game_id = None):
     data = b''
     ports = b''
     chat_online = b''
@@ -198,13 +201,15 @@ if __name__ == "__main__":
     while not data:
         print("Connecting to the queue system...")
         data = ask_for_servers.recv(HEADER)
+
     while not ports:
-        print("Waiting for ports...")
-        sleep(0.1)
         ports = ask_for_servers.recv(HEADER)
         print(ports)
-    # while not chat_online:
-    #     chat_online = ask_for_servers.recv(HEADER)
+
+    #while not chat_online:
+        #chat_online = ask_for_servers.recv(HEADER)
+        
+
     print("received data: ", data.decode())
     print("received ports: ", ports.decode())
     if chat_online:
@@ -218,30 +223,25 @@ if __name__ == "__main__":
     # Comment: Vittu apua :DD
     ports = str(ports).strip("b,'][").split(',')
     print(ports)
-    if CHAT_SERVER:
+    #if CHAT_SERVER:
         #this needs to be changed so that it uses the received
-        cl = Client(SERVER, ports, CHAT_SERVER, CHAT_PORT)
-    else:
-        cl = Client(SERVER, ports)
+       # cl = Client(SERVER, ports, CHAT_SERVER, CHAT_PORT)
+    #else:
+    cl = Client(SERVER, ports)
     cl.start()
 
 
-"""
-example of a msg send to chat server
-
-   def send_chat(self):
-
-        while True:
-            msg = input("send message: ")
-            if msg == self.DISCONNECT_MESSAGE:
-                break
-            message = msg.encode(self.FORMAT)
-            msg_length = len(message)
-            send_length = str(msg_length).encode(self.FORMAT)
-            send_length += b' ' * (self.HEADER - len(send_length))
-            self.client.send(send_length)
-            self.client.send(message)
-            print(self.client.recv(2048).decode(self.FORMAT))
-            print("sent!")
-
-"""
+if __name__ == "__main__":
+    while True:
+        print("     ~~Welcome to Pattleshibz~~")
+        print("1. Quick join game      ")
+        print("2. Rejoin a game     ")
+        print("3. Exit     ")
+        choice = input("Choose: ")
+        if choice == "1":
+            setup_client()
+        if choice == "2":
+            gameid = input("Give gameid of previous game: ")
+            setup_client(gameid)
+        if choice == "3":
+            sys.exit()
