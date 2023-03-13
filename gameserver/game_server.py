@@ -6,7 +6,7 @@ import redis
 
 HEADER = 4096
 # load balancer port
-PORT1 = 6969
+PORT1 = 16432
 # game server ports
 PORT2 = 5050
 PORT3 = 5051

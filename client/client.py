@@ -6,7 +6,7 @@ import sys
 HEADER = 1024
 FORMAT = 'utf-8'
 #load balancer port
-PORT1 = 6969
+PORT1 = 16432
 #game server ports
 PORT2 = 5050
 PORT3 = 5051
@@ -234,6 +234,7 @@ def setup_client(gameid=None):
     while not ports:
         ports = ask_for_servers.recv(HEADER)
         print(ports)
+        wait(1)
     print("received ports: ", ports.decode())
     #while not chat_online:
         #chat_online = ask_for_servers.recv(HEADER)
