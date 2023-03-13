@@ -13,3 +13,9 @@ To start the program manually:
 9. python ./chatserver/chatserver.py
 10. python ./client/client.py
 
+
+docker run -it --network="host" holappaj/loadbalancer:0.0
+docker run -it --network="host" holappaj/chatserver:0.0
+docker run -it --network="host" holappaj/gameserver:0.4
+
+python3 client/client.py

@@ -216,7 +216,7 @@ def start_server(port):
         print("Error: ", e)
     print("Sending information to load balancer.")
     send_to_load_balancer(free_port)
-    print(f"Server is listening on {SERVER}")
+    print(f"Server is listening on {SERVER}:{port}")
     while True:
         if (int(threading.active_count() - 1) <= 2):
             for i in range(2):
@@ -247,7 +247,7 @@ if len(sys.argv) > 1:
         RESTART_GAMEID = int(sys.argv[2])
         print("port now:", free_port)
         print("RESTART_GAMEID: ", RESTART_GAMEID)
-        
+
 
 
 else:
@@ -282,5 +282,5 @@ else:
 
 check_socket.close()
 
-print("Starting the server.")
+print(f"Starting the server at: |{free_port}|")
 start_server(free_port)
