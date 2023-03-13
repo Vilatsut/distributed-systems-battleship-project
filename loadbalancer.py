@@ -111,6 +111,8 @@ while True:
             if "Chat server" in data.decode():
                 print(f"Received from {client_address}: {data.decode()}")
                 chat_online = True
+                CHAT_SERVER = (client_address[0])
+                CHAT_PORT = (data.decode()[-4:])
 
             if "send servers pls!" in data.decode():
                 if not game_server_addresses:
@@ -162,9 +164,11 @@ while True:
                 print(response)
                 client_socket.send(response.encode())
                 if chat_online:
-
-                    response = "Chat Server is online."
+                    response = ""
+                    response = f"||{CHAT_PORT}"
+                    print("Chat response: " + str(response))
                     client_socket.send(response.encode())
+
 
     except Exception as e:
         print("exiting", e)
