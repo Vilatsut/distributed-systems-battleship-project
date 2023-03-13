@@ -232,28 +232,29 @@ def setup_client(gameid=None):
         print("received data: ", data.decode())
 
     while not ports:
+        print("Waiting for ports...")
+        sleep(0.5)
         ports = ask_for_servers.recv(HEADER)
-        print(ports)
-    print("received ports: ", ports.decode())
-    #while not chat_online:
-        #chat_online = ask_for_servers.recv(HEADER)
+        ports_de = ports.decode()
+        print(f"Found ports {ports}")
 
     print("received data: ", data.decode())
-    print("received ports: ", ports.decode())
-    if chat_online:
-        print("chat server set")
-        #chat server ip and port
-        CHAT_SERVER = '127.0.0.1'
-        CHAT_PORT = 6969
+    print("received ports: ", ports_de)
+    if ('6969') in ports_de:
+        ports_de = ports_de.split('||')[0]
+        print(f"Prots_de: {ports_de}")
+        CHAT_PORT=int(6969)
+        CHAT_SERVER=str("127.0.0.1")
+        chat_online = True
+
 
     ask_for_servers.close()
-    ports = str(ports).strip("b,'][").split(',')
+    ports_de = str(ports_de).strip("b,'][").split(',')
     print(ports)
-    #if CHAT_SERVER:
-        #this needs to be changed so that it uses the received
-       # cl = Client(SERVER, ports, CHAT_SERVER, CHAT_PORT)
-    #else:
-    if gameid:
+    if CHAT_SERVER:
+        print("WITH CHAT")
+        cl = Client(SERVER, ports_de, gameid, CHAT_SERVER, CHAT_PORT)
+    elif gameid:
         cl = Client(SERVER, ports, gameid)
     else:
         cl = Client(SERVER, ports)
