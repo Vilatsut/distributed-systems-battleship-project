@@ -8,7 +8,7 @@ from psutil import process_iter
 from signal import SIGTERM  # or SIGKILL
 
 HEADER = 4096
-PORT = 6969
+PORT = 16432
 SERVER = '127.0.0.1'
 ADDR = (SERVER, PORT)
 FORMAT = 'utf-8'
@@ -56,7 +56,7 @@ redis = redis.Redis()
 count = 0
 
 while True:
-    
+
     try:
         client_socket, client_address = load_balancer.accept()
         data = client_socket.recv(1024)
@@ -77,7 +77,7 @@ while True:
                 print(db_port)
             except Exception as e:
                 print("Redis error getting old game.")
-            
+
             # this should call the game_server with sys argv of the port that crashed
             check_socket = socket.socket(
             socket.AF_INET, socket.SOCK_STREAM)
@@ -99,7 +99,7 @@ while True:
             #delete this its just for debugging restart
             if count == 3:
                 sys.exit()
-            
+
 
         else:
             if "Game server" in data.decode():
@@ -162,7 +162,7 @@ while True:
                 print(response)
                 client_socket.send(response.encode())
                 if chat_online:
-                    
+
                     response = "Chat Server is online."
                     client_socket.send(response.encode())
 

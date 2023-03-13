@@ -6,7 +6,7 @@ import redis
 
 HEADER = 4096
 # load balancer port
-PORT1 = 6969
+PORT1 = 16432
 # game server ports
 PORT2 = 5050
 PORT3 = 5051
@@ -247,7 +247,7 @@ if len(sys.argv) > 1:
         RESTART_GAMEID = int(sys.argv[2])
         print("port now:", free_port)
         print("RESTART_GAMEID: ", RESTART_GAMEID)
-        
+
 
 
 else:
