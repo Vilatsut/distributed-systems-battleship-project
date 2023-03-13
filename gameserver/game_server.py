@@ -1,99 +1,29 @@
 import socket
 import threading
-import pickle
 import sys
+import signal
+from ast import literal_eval
+import time
 import redis
+import pickle
 
 HEADER = 4096
-# load balancer port
-PORT1 = 6969
-# game server ports
-PORT2 = 5050
-PORT3 = 5051
-PORT4 = 5052
-SERVER = '127.0.0.1'
-# ADDR = (SERVER, PORT)
-FORMAT = 'utf-8'
-DISCONNECT_MESSAGE = "!DISCONNECT"
-RESTART_GAMEID = None
 
-player_connections = []
-player_addresses = []
-player_boards = []
+LB_SERVER = '127.0.0.1'
+LB_PORT = 6969
+LB_ADDR = (LB_SERVER, LB_PORT)
+
+GS_SERVER = '127.0.0.1'
+GS_PORT = 50557
+GS_ADDR = (GS_SERVER, GS_PORT)
+
+PORT_RANGE_START    = 50555
+PORT_RANGE_END      = 50560
 
 redis = redis.Redis()
 
 
-def player_shoot(player):
-
-    msg = f'SHOOT player {player}'.encode(FORMAT)
-    print("sending player_shoot:", msg)
-    player_connections[player-1].send(msg)
-
-    response = player_connections[player-1].recv(HEADER)
-    shot = pickle.loads(response)
-    # TODO Make sure shot is valid tuple (int, int) inside boundaries 0-BOARD_SIZE and not hit yet
-    return shot
-
-
-def player_shoot_again(player):
-
-    msg = f'HIT player {player}'.encode(FORMAT)
-    print("sending player_shoot:", msg)
-    player_connections[player-1].send(msg)
-
-    response = player_connections[player-1].recv(HEADER)
-    shot = pickle.loads(response)
-    # TODO Make sure shot is valid tuple (int, int) inside boundaries 0-BOARD_SIZE and not hit yet
-    return shot
-
-
-def act_shot(player, shot):
-    hit = False
-    opposite_board = player_boards[player % 2]
-    if opposite_board[shot[0]][shot[1]] == "X":
-        print("Player hit something")
-        hit = True
-    player_boards[player % 2][shot[0]][shot[1]] = "O"
-    return hit
-
-
-def is_finished(player):
-    opposite_board = player_boards[player % 2]
-    return not any('X' in sublist for sublist in opposite_board)
-
-
-def player_win(player):
-
-    msg = f'WIN player {player}?'.encode(FORMAT)
-    print("sending player_win:", msg)
-    player_connections[player-1].send(msg)
-
-    msg = f'LOSE player {player%2+1}?'.encode(FORMAT)
-    print("sending player_lose:", msg)
-    player_connections[player % 2].send(msg)
-
-
-def player_miss(player):
-    msg = f'MISS player {player - 1}?'.encode(FORMAT)
-    print("sending player_miss:", msg)
-    player_connections[player - 1].send(msg)
-
-
-def print_boards(gameid=None):
-    if gameid:
-        redis.mset({gameid: "$" + str(player_boards)})
-        print("this is what boards look like: ", player_boards)
-        print("this is what is being sent: ", str(player_boards))
-    msg = f'PRINT {player_boards}?'.encode(FORMAT)
-    for conn in player_connections:
-        print("sending print_boards:", msg)
-        conn.send(msg)
-
 def generate_gameId():
-    """
-        Generates gameid and makes sure there isn't one in the database currently
-    """
     try:
         gameids = redis.keys('*')
         gameid = 0
@@ -106,181 +36,239 @@ def generate_gameId():
     except:
         print("You havent started Redis!")
         return None
+    
+
+class Gameserver:
+    def __init__(self) -> None:
+        self.address = None
+        self.player_connections = []
+        self.player_addresses = []
+        self.player_boards = []
+        self.sock = None
+
+        self.gameid = None
+        self.status = None
+
+        self.server = None
+        self.port = None
+        self.address = None
+
+        # Trap keyboard interrupts
+        signal.signal(signal.SIGINT, self.sighandler)
+    def sighandler(self, signum, frame):
+        print("\nShutting down the gameserver")
+        if self.sock:
+            self.sock.close()
+        for conn in self.player_connections:
+            conn.close()
+        sys.exit(1)
+
+    def handle_client(self, conn, addr, num):
+        print(f"{addr} connected.")
+
+        # add the player details to lists
+        self.player_connections.append(conn)
+        self.player_addresses.append(addr)
 
 
-def start_game(gameid=None):
-    print("Game has been started finally...")
-    winner = 0
-    turn = 0
-    while winner == 0:
-        shot = None
-        player = turn % 2+1
-        shot = player_shoot(player)
-        hit = act_shot(player, shot)
-        # if gameid then print boards updates redis database
-        print("came to check gameid print boards")
-        if gameid:
-            print_boards(gameid)
+        client_status = conn.recv(HEADER).decode()
+        print(f'Client status when connecting is : {client_status}')
+
+        if self.status == "RECONNECT_STARTED":
+            conn.send(str(self.player_boards[1]).encode())
+            time.sleep(0.5)
+            for conn in self.player_connections:
+                message = f"Game is starting! Your game id is: {self.gameid}"
+                conn.send(message.encode())
+            self.start_game()
+
+        if "reconnect" in client_status:
+            self.status = "RECONNECT_STARTED"
+            self.gameid = client_status.split(":")[1]
+            data = redis.mget(self.gameid)
+            print(f"Reconnecting data received by gameserver: {data[0].decode()}")
+            self.player_boards = literal_eval(data[0].decode())
+            conn.send(str(self.player_boards[0]).encode())
         else:
-            print_boards()
-        if is_finished(player):
-            print(f"Player {player} won!!!")
-            player_win(player)
-            winner = player
-            for conn in player_connections:
-                # uncomment this so that the game board gets deleted if game ends
-                # redis.delete(gameid)
-                conn.close()
-            return
+            print(f"Receiving board from client {num}")
+            player_board_str = conn.recv(HEADER).decode()
+            player_board = literal_eval(player_board_str)
+            self.player_boards.append(player_board)
 
-        if hit:
-            while hit:
-                shot = player_shoot_again(player)
-                hit = act_shot(player, shot)
-                # if gameid then print boards updates redis database
-                if gameid:
-                    print_boards(gameid)
-                else:
-                    print_boards()
-                if is_finished(player):
-                    print(f"Player {player} won!!!")
-                    player_win(player)
-                    winner = player
-                    for conn in player_connections:
-                        # uncomment this so that the game board gets deleted if game ends
-                        # redis.delete(gameid)
-                        conn.close()
-                    return
+            print(f"User board was {player_board}")
 
-                print(
-                    f"Player hit something! Gets to shoot again. hit was {hit}")
-        else:
-            print("Player missed")
-            player_miss(player)
+            conn.send(f"START Welcome you are player {num}".encode())
 
-        turn = turn + 1
+            if num == 2:
+                # generate a new gameid to the game
+                self.gameid = generate_gameId()
+                redis.mset({self.gameid:f"[{str(self.player_boards[0])}],[{str(self.player_boards[1])}]"})
+
+                for conn in self.player_connections:
+                    message = f"Game is starting! Your game id is: {self.gameid}"
+                    conn.send(message.encode())
+                self.start_game()
 
 
 
-def handle_client(conn, addr, num, port, restart=None):
-    """
-        waits for two players to connect
-        and submit their boards
-    """
-    print(f"{addr} connected.")
+    def player_shoot(self, player):
 
-    # add the player details to lists
-    player_connections.append(conn)
-    player_addresses.append(addr)
+        msg = f'SHOOT player {player}'.encode()
+        print("sending player_shoot:", msg)
+        try:
+            self.player_connections[player-1].send(msg)
+            response = self.player_connections[player-1].recv(HEADER)
+            shot = pickle.loads(response)
+        except:
+            print("Client sent an empty shot")
+            sys.exit()
 
-    if not restart:
-        # receive the player boards
-        msg = conn.recv(HEADER)
-        board = pickle.loads(msg)
-        player_boards.append(board)
+        return shot
 
-        # generate a new gameid to the game
-        gameid = generate_gameId()
 
-        print(f"User board was {board}")
-        conn.send(
-            f"WAIT Welcome you are player {num} your game id is {gameid}".encode(FORMAT))
+    def player_shoot_again(self, player):
 
-        if (num == 2):
-            print("gameid: ", gameid)
-            # if gameid then store the boards in redis memory under gameid key
-            if gameid:
-                redis.mset({gameid: "$" + str(player_boards) + str(port)})
-                print("these are the boards in redis:", redis.mget(gameid))
-                start_game(gameid)
-            # else startgame without gameid
+        msg = f'HIT player {player}'.encode()
+        print("sending player_shoot:", msg)
+        self.player_connections[player-1].send(msg)
+
+        response = self.player_connections[player-1].recv(HEADER)
+        shot = pickle.loads(response)
+        # TODO Make sure shot is valid tuple (int, int) inside boundaries 0-BOARD_SIZE and not hit yet
+        return shot
+
+
+    def act_shot(self, player, shot):
+        hit = False
+        opposite_board = self.player_boards[player % 2]
+        if opposite_board[shot[0]][shot[1]] == "X":
+            print("Player hit something")
+            hit = True
+        self.player_boards[player % 2][shot[0]][shot[1]] = "O"
+        return hit
+
+
+    def is_finished(self, player):
+        opposite_board = self.player_boards[player % 2]
+        return not any('X' in sublist for sublist in opposite_board)
+
+
+    def player_win(self, player):
+
+        msg = f'WIN player {player}?'.encode()
+        print("sending player_win:", msg)
+        self.player_connections[player-1].send(msg)
+
+        msg = f'LOSE player {player%2+1}?'.encode()
+        print("sending player_lose:", msg)
+        self.player_connections[player % 2].send(msg)
+
+
+    def player_miss(self, player):
+        msg = f'MISS player {player - 1}?'.encode()
+        print("sending player_miss:", msg)
+        self.player_connections[player - 1].send(msg)
+
+
+    def print_boards(self):
+        redis.mset({self.gameid:f"[{str(self.player_boards[0])}],[{str(self.player_boards[1])}]"})
+        msg = f'PRINT {self.player_boards}?'.encode()
+        for conn in self.player_connections:
+            print("sending print_boards:", msg)
+            conn.send(msg)
+
+
+
+    def start_game(self):
+        print("Game has been started finally...")
+        winner = 0
+        turn = 0
+        while winner == 0:
+            shot = None
+            player = turn % 2+1
+            shot = self.player_shoot(player)
+            hit = self.act_shot(player, shot)
+            self.print_boards()
+            if self.is_finished(player):
+                print(f"Player {player} won!!!")
+                self.player_win(player)
+                winner = player
+                for conn in self.player_connections:
+                    # uncomment this so that the game board gets deleted if game ends
+                    redis.delete(self.gameid)
+                    conn.close()
+                return
+
+            if hit:
+                while hit:
+                    shot = self.player_shoot_again(player)
+                    hit = self.act_shot(player, shot)
+                    self.print_boards()
+                    if self.is_finished(player):
+                        print(f"Player {player} won!!!")
+                        self.player_win(player)
+                        winner = player
+                        for conn in self.player_connections:
+                            # uncomment this so that the game board gets deleted if game ends
+                            # redis.delete(gameid)
+                            conn.close()
+                        return
+
+                    print(
+                        f"Player hit something! Gets to shoot again. hit was {hit}")
             else:
-                start_game()
-    else:
-        boards = redis.mget(RESTART_GAMEID)
-        print(boards)
-        conn.send(
-            f"WAIT Welcome you are player {num} your game id is {RESTART_GAMEID}".encode(FORMAT))
-        print("6969restarting game from ", RESTART_GAMEID)
-        if ( num == 2 ):
-            start_game(RESTART_GAMEID)
-    # conn.close()
+                print("Player missed")
+                self.player_miss(player)
+
+            turn = turn + 1
+
+    def register_to_load_balancer(self, address):
+        lb = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        lb.connect(LB_ADDR)
+        message = f"Game server started at addr:{address}"
+        lb.send(message.encode())
+        lb.close()
 
 
-def start_server(port):
-    try:
-        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server.bind((SERVER, port))
-        server.listen()
-    except Exception as e:
-        print("Error: ", e)
-    print("Sending information to load balancer.")
-    send_to_load_balancer(free_port)
-    print(f"Server is listening on {SERVER}")
-    while True:
-        if (int(threading.active_count() - 1) <= 2):
-            for i in range(2):
-                conn, addr = server.accept()
-                thread = threading.Thread(
-                    target=handle_client, args=(conn, addr, i+1, port, RESTART_GAMEID))
-                thread.start()
-                print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 1}")
+    def start_server(self):
 
+        PORT_RANGE = range(PORT_RANGE_START, PORT_RANGE_END) # Port range to bind to
+        for port in PORT_RANGE:
+            try:
+                self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.sock.bind((GS_SERVER, port))
+                self.sock.listen()
+                print(f"Successfully bound to port {port}")
+                self.port = port
+                self.server = GS_SERVER
+                self.address = (GS_SERVER, port)
+                break
 
-def send_to_load_balancer(port):
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.connect((SERVER, PORT1))
-    message = f"Game server started at {port}"
-    server.send(message.encode())
-    server.close()
-
-
-check_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# checking if game is restarted (the server is called with port)
-if len(sys.argv) > 1:
-    try:
-        check_socket.bind((SERVER, int(sys.argv[1])))
-    except OSError as e:
-        print("Error starting game server, contact support: ", e)
-    else:
-        free_port = int(sys.argv[1])
-        RESTART_GAMEID = int(sys.argv[2])
-        print("port now:", free_port)
-        print("RESTART_GAMEID: ", RESTART_GAMEID)
+            except OSError as e:
+                # Print an error message if the socket failed to bind to the current port
+                print(f"Failed to bind to port {port}: {e}")
+                continue
+            except:
+                if self.sock:
+                    self.sock.close()
+                sys.exit()
+        if not self.port:
+            print("FAILED TO BIND TO PORTS")
+            sys.exit()
         
 
+        print("Sending information to load balancer.")
+        self.register_to_load_balancer(self.address)
+        print(f"Server is listening on {self.address}")
+        while (int(threading.active_count() - 1) <= 2):
+                for i in range(2):
+                    conn, addr = self.sock.accept()
+                    thread = threading.Thread(
+                        target=self.handle_client, args=(conn, addr, i+1))
+                    thread.start()
+                    print(f"[ACTIVE CONNECTIONS] {len(self.player_connections)}")
 
-else:
-    # this is for checking for available PORT to connect game server to
-    free_port = ""
-    try:
-        check_socket.bind((SERVER, PORT2))
-    except OSError:
-        try:
-            check_socket.bind((SERVER, PORT3))
-        except OSError:
-            print(
-                "No available PORTs, maximum server number already exceeded. Press anything to exit.")
-            """
-            try:
-                check_socket.bind((SERVER, PORT4))
-            except OSError:
-                print(
-                    "No available PORTs, maximum server number already exceeded. Press anything to exit.")
-                input()
-                sys.exit()
-            else:
-                print(f"Connected to {PORT4}")
-                free_port = PORT4
-            """
-        else:
-            print(f"Connected to {PORT3}")
-            free_port = PORT3
-    else:
-        print(f"Connected to {PORT2}")
-        free_port = PORT2
 
-check_socket.close()
-
-print("Starting the server.")
-start_server(free_port)
+if __name__ == "__main__":
+    gs = Gameserver()
+    gs.start_server()
