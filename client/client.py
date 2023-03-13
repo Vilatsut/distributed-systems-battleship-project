@@ -230,7 +230,6 @@ def setup_client(gameid=None):
         while not data:
             print("Connecting to the queue system...")
             data = ask_for_servers.recv(HEADER)
-        #print("received data: ", data.decode())
 
     while not ports:
         print("Waiting for ports...")
@@ -263,7 +262,7 @@ def setup_client(gameid=None):
         print("WITH CHAT")
         cl = Client(SERVER, ports_de, gameid, CHAT_SERVER, CHAT_PORT)
     #else:
-    if gameid:
+    elif gameid:
         print("WITHOUTCHET")
         cl = Client(SERVER, ports_de, gameid)
     else:

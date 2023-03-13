@@ -21,7 +21,7 @@ player_connections = []
 player_addresses = []
 player_boards = []
 
-redis = redis.Redis()
+redis = redis.Redis(host=SERVER, port=6379)
 
 
 def player_shoot(player):
