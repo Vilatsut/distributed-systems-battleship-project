@@ -211,6 +211,7 @@ def setup_client(gameid=None):
     data = b''
     ports = b''
     chat_online = b''
+    CHAT_SERVER = None
 
 
     # asks for the ports of online game servers (5050, 5051, 5052)
@@ -233,7 +234,7 @@ def setup_client(gameid=None):
 
     while not ports:
         print("Waiting for ports...")
-        sleep(0.5)
+        time.sleep(0.5)
         ports = ask_for_servers.recv(HEADER)
         ports_de = ports.decode()
         print(f"Found ports {ports}")
