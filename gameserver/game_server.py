@@ -88,6 +88,7 @@ class Gameserver:
             data = redis.mget(self.gameid)
             print(f"Reconnecting data received by gameserver: {data[0].decode()}")
             self.player_boards = literal_eval(data[0].decode())
+            print(f'PLAYER BOARDS ARE: {self.player_boards}')
             conn.send(str(self.player_boards[0]).encode())
         else:
             print(f"Receiving board from client {num}")
@@ -102,7 +103,7 @@ class Gameserver:
             if num == 2:
                 # generate a new gameid to the game
                 self.gameid = generate_gameId()
-                redis.mset({self.gameid:f"[{str(self.player_boards[0])}],[{str(self.player_boards[1])}]"})
+                redis.mset({self.gameid:f"{str(self.player_boards)}"})
 
                 for conn in self.player_connections:
                     message = f"Game is starting! Your game id is: {self.gameid}"
@@ -121,7 +122,7 @@ class Gameserver:
             shot = pickle.loads(response)
         except:
             print("Client sent an empty shot")
-            sys.exit()
+            return 
 
         return shot
 
@@ -140,6 +141,7 @@ class Gameserver:
 
     def act_shot(self, player, shot):
         hit = False
+        print(self.player_boards)
         opposite_board = self.player_boards[player % 2]
         if opposite_board[shot[0]][shot[1]] == "X":
             print("Player hit something")
@@ -171,7 +173,7 @@ class Gameserver:
 
 
     def print_boards(self):
-        redis.mset({self.gameid:f"[{str(self.player_boards[0])}],[{str(self.player_boards[1])}]"})
+        redis.mset({self.gameid:f"{str(self.player_boards)}"})
         msg = f'PRINT {self.player_boards}?'.encode()
         for conn in self.player_connections:
             print("sending print_boards:", msg)
