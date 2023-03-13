@@ -2,6 +2,7 @@ import time
 import socket
 import pickle
 import sys
+from time import sleep
 
 HEADER = 1024
 FORMAT = 'utf-8'
@@ -229,18 +230,26 @@ def setup_client(gameid=None):
         while not data:
             print("Connecting to the queue system...")
             data = ask_for_servers.recv(HEADER)
-        print("received data: ", data.decode())
+        #print("received data: ", data.decode())
 
     while not ports:
+        print("Waiting for ports...")
+        sleep(0.5)
         ports = ask_for_servers.recv(HEADER)
-        print(ports)
-        wait(1)
+        ports_de = ports.decode()
+        print(f"Found ports {ports}")
+
     print("received ports: ", ports.decode())
-    #while not chat_online:
-        #chat_online = ask_for_servers.recv(HEADER)
+
+    if ('6969') in ports_de:
+        ports_de = ports_de.split('||')[0]
+        print(f"Prots_de: {ports_de}")
+        CHAT_PORT=int(6969)
+        CHAT_SERVER=str("127.0.0.1")
+        chat_online = True
 
     print("received data: ", data.decode())
-    print("received ports: ", ports.decode())
+    print("received ports: ", ports_de)
     if chat_online:
         print("chat server set")
         #chat server ip and port
@@ -248,16 +257,18 @@ def setup_client(gameid=None):
         CHAT_PORT = 6969
 
     ask_for_servers.close()
-    ports = str(ports).strip("b,'][").split(',')
+    ports_de = str(ports_de).strip("b,'][").split(',')
     print(ports)
-    #if CHAT_SERVER:
-        #this needs to be changed so that it uses the received
-       # cl = Client(SERVER, ports, CHAT_SERVER, CHAT_PORT)
+    if CHAT_SERVER:
+        print("WITH CHAT")
+        cl = Client(SERVER, ports_de, gameid, CHAT_SERVER, CHAT_PORT)
     #else:
     if gameid:
-        cl = Client(SERVER, ports, gameid)
+        print("WITHOUTCHET")
+        cl = Client(SERVER, ports_de, gameid)
     else:
-        cl = Client(SERVER, ports)
+        print("ELSE NO CHAT NO ID")
+        cl = Client(SERVER, ports_de)
     cl.start()
 
 

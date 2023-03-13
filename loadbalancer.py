@@ -8,7 +8,7 @@ from psutil import process_iter
 from signal import SIGTERM  # or SIGKILL
 
 HEADER = 4096
-PORT = 6969
+PORT = 16432
 SERVER = '127.0.0.1'
 ADDR = (SERVER, PORT)
 FORMAT = 'utf-8'
@@ -111,6 +111,8 @@ while True:
             if "Chat server" in data.decode():
                 print(f"Received from {client_address}: {data.decode()}")
                 chat_online = True
+                CHAT_SERVER = (client_address[0])
+                CHAT_PORT = (data.decode()[-4:])
 
             if "send servers pls!" in data.decode():
                 if not game_server_addresses:
@@ -159,11 +161,12 @@ while True:
                 for i in game_server_addresses:
                     ports = ports + "," + i
                 response = f"{ports}"
-                print(response)
+                print("Port response: " + response)
                 client_socket.send(response.encode())
                 if chat_online:
-
-                    response = "Chat Server is online."
+                    response = ""
+                    response = f"||{CHAT_PORT}"
+                    print("Chat response: " + str(response))
                     client_socket.send(response.encode())
 
     except Exception as e:
