@@ -1,0 +1,46 @@
+version: "3.9"
+services:
+  loadbalancer:
+    image: holappaj/loadbalancer:0.0
+    container_name: loadbalancer
+    ports:
+      - 16432:16432
+  chatserver:
+    image: holappaj/chatserver:0.1
+    container_name: chatserver
+    depends_on:
+      - loadbalancer
+    ports:
+      - 6969:6969
+    networks:
+      -  game
+  gameserver1:
+    image: holappaj/gameserver:0.3
+    container_name: gameserver1
+    depends_on:
+      - loadbalancer
+    ports:
+      - 5050:5050
+    networks:
+      -  game
+  gameserver2:
+    image: holappaj/gameserver:0.3
+    container_name: gameserver2
+    depends_on:
+      - loadbalancer
+    ports:
+      - 5051:5051
+    networks:
+      -  game
+  gameserver3:
+    image: holappaj/gameserver:0.3
+    container_name: gameserver3
+    depends_on:
+      - loadbalancer
+    ports:
+      - 5052:5052
+    networks:
+      - game
+
+networks:
+  game:

@@ -44,7 +44,7 @@ class ShipBoard():
 
     def input_board(self):
         self.display_board()
-    
+
         for ship, ship_positions in SHIP_TYPES.items():
             while True:
                 while ship_positions > 0:
@@ -115,7 +115,7 @@ class Client:
                         print("connected to chat server succesfully")
                     except Exception as e:
                         print("Unable to connect to chat socket with exception: ", e)
-                    
+
             except Exception as e:
                 print("Unable to connect to socket with exception: ", e)
                 if self.sock:
@@ -171,7 +171,7 @@ class Client:
                         self.sock.send(package)
                     except:
                         print("Sending the shot failed")
-        
+
                 elif response.startswith("MISS"):
                     print("You missed. Wait for your turn.")
                 elif response.startswith("WIN"):
@@ -180,12 +180,12 @@ class Client:
                 elif response.startswith("LOSE"):
                     print("The other player sunk all your ships!!!")
                     return
-                
+
                 elif response.startswith("PRINT"):
                     print(f"Both Boards look almost like  \n{response}\n")
 
 
-            
+
             # player_input = input("To send a chat start message with C, to check for turn press anything else.")
             # this could perhaps use a better implementation...
             # if player_input.upper().startswith("C"):
