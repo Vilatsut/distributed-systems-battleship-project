@@ -174,8 +174,11 @@ class Gameserver:
 
     def print_boards(self):
         redis.mset({self.gameid:f"{str(self.player_boards)}"})
-        msg = f'PRINT {self.player_boards}?'.encode()
-        for conn in self.player_connections:
+
+        for conn, board in zip(self.player_connections, reversed(self.player_boards)):
+            
+            board = board
+            msg = f'PRINT :{board}?'.encode()
             print("sending print_boards:", msg)
             conn.send(msg)
 

@@ -224,7 +224,9 @@ class Client:
                     return
                 
                 elif response.startswith("PRINT"):
-                    print(f"Both Boards look almost like  \n{response}\n")
+                    board = response.split(":")[1]
+                    print(f"Opponents board is: \n{board}\n")
+
                 
                 elif response == "":
                     # print("Server sent empty string!!!")
