@@ -6,6 +6,7 @@ from ast import literal_eval
 import time
 import redis
 import pickle
+import numpy as np
 
 HEADER = 4096
 
@@ -176,8 +177,9 @@ class Gameserver:
         redis.mset({self.gameid:f"{str(self.player_boards)}"})
 
         for conn, board in zip(self.player_connections, reversed(self.player_boards)):
-            
-            board = board
+
+            board = np.array(board)
+            board = np.where(board == "X", " ", board)
             msg = f'PRINT :{board}?'.encode()
             print("sending print_boards:", msg)
             conn.send(msg)
