@@ -52,9 +52,7 @@ class Client:
             print(f"Error receiving board from game server: {e}")
             self.sock.close()
             sys.exit()
-        print(board)
-        self.board = literal_eval(board.decode())[0]
-        print(self.board)
+        self.board = literal_eval(board.decode())
         self.display_board()
     
     def send_board(self):
@@ -137,7 +135,7 @@ class Client:
         self.sock.send(client_status.encode())
 
         self.get_board()
-        self.start()
+        self.start(reconnect=True)
 
     def connect(self):
         
@@ -180,9 +178,10 @@ class Client:
         self.input_board()
         self.start()
 
-    def start(self):
+    def start(self, reconnect = False):
 
-        self.send_board()
+        if not reconnect:
+            self.send_board()
 
         while True:
             # Response is SHOOT when its players turn to shoot, HIT when last shot hit something and its time to shoot again, MISS when last hit missed, WIN when player won
@@ -225,7 +224,9 @@ class Client:
                     return
                 
                 elif response.startswith("PRINT"):
-                    print(f"Both Boards look almost like  \n{response}\n")
+                    board = response.split(":")[1]
+                    print(f"Opponents board is: \n{board}\n")
+
                 
                 elif response == "":
                     # print("Server sent empty string!!!")
